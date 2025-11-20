@@ -60,21 +60,23 @@ export interface LanguageOption {
   label: string;
 }
 
-export interface GrammarPoint {
-  topic: string;
-  explanation: string;
-}
-
 export interface VocabularyItem {
   swedish: string;
   english: string;
   secondary: string;
 }
 
+export interface GrammarPoint {
+  topic: string;
+  explanationSv: string;
+  explanationEn: string;
+}
+
 export interface ChapterContent {
   chapterNumber: number;
   title: string;
-  summary: string;
+  summarySv: string;
+  summaryEn: string;
   grammar: GrammarPoint[];
   vocabulary: VocabularyItem[];
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, ChevronRight, Book, Lightbulb, List, Loader2, AlertCircle } from 'lucide-react';
+import { BookOpen, ChevronRight, Book, Lightbulb, List, Loader2, AlertCircle, Languages } from 'lucide-react';
 import { getRivstartChapter } from '../services/geminiService';
 import { ChapterContent, LoadingState } from '../types';
 import { RIVSTART_CHAPTERS } from '../constants';
@@ -13,9 +13,13 @@ const RivstartView: React.FC<RivstartViewProps> = ({ targetLanguageLabel, target
   const [selectedChapterId, setSelectedChapterId] = useState(1);
   const [chapterData, setChapterData] = useState<ChapterContent | null>(null);
   const [status, setStatus] = useState<LoadingState>(LoadingState.IDLE);
+  const [showSummaryTranslation, setShowSummaryTranslation] = useState(false);
+  const [showGrammarTranslation, setShowGrammarTranslation] = useState(false);
 
   const handleLoadChapter = async () => {
     setStatus(LoadingState.LOADING);
+    setShowSummaryTranslation(false);
+    setShowGrammarTranslation(false);
     try {
       const chapterTitle = RIVSTART_CHAPTERS.find(c => c.id === selectedChapterId)?.title || `Chapter ${selectedChapterId}`;
       const data = await getRivstartChapter(selectedChapterId, chapterTitle, targetLanguageLabel);
@@ -85,27 +89,61 @@ const RivstartView: React.FC<RivstartViewProps> = ({ targetLanguageLabel, target
         <div className="space-y-6 animate-fade-in-up">
           
           {/* Header Card */}
-          <div className="bg-gradient-to-br from-teal-800 to-slate-900 rounded-3xl p-8 text-white shadow-lg">
-            <span className="text-rivstart-yellow font-bold tracking-widest uppercase text-sm">Chapter {chapterData.chapterNumber}</span>
-            <h1 className="text-3xl md:text-4xl font-bold mt-2 mb-4">{chapterData.title}</h1>
-            <p className="text-slate-300 text-lg leading-relaxed max-w-3xl">
-              {chapterData.summary}
-            </p>
+          <div className="bg-gradient-to-br from-teal-800 to-slate-900 rounded-3xl p-8 text-white shadow-lg relative overflow-hidden group">
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                   <span className="text-rivstart-yellow font-bold tracking-widest uppercase text-sm">Chapter {chapterData.chapterNumber}</span>
+                   <h1 className="text-3xl md:text-4xl font-bold mt-2">{chapterData.title}</h1>
+                </div>
+                <button 
+                  onClick={() => setShowSummaryTranslation(!showSummaryTranslation)}
+                  className="p-2 bg-white/10 hover:bg-white/20 rounded-full backdrop-blur-sm transition-colors flex items-center justify-center"
+                  title="Toggle English Translation"
+                >
+                  <Languages className={`w-5 h-5 ${showSummaryTranslation ? 'text-rivstart-yellow' : 'text-white'}`} />
+                </button>
+              </div>
+              
+              <div className="relative min-h-[80px]">
+                 <p className={`text-slate-300 text-lg leading-relaxed max-w-3xl transition-opacity duration-300 ${showSummaryTranslation ? 'opacity-0 absolute inset-0' : 'opacity-100'}`}>
+                  {chapterData.summarySv}
+                </p>
+                <p className={`text-slate-300 text-lg leading-relaxed max-w-3xl transition-opacity duration-300 ${showSummaryTranslation ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}>
+                  {chapterData.summaryEn}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             
             {/* Grammar Section */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-100">
-                <Lightbulb className="w-5 h-5 text-yellow-500" />
-                <h3 className="font-bold text-xl text-gray-800">Grammar Points</h3>
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  <h3 className="font-bold text-xl text-gray-800">Grammar Points</h3>
+                </div>
+                <button 
+                  onClick={() => setShowGrammarTranslation(!showGrammarTranslation)}
+                  className={`p-2 rounded-full transition-colors ${showGrammarTranslation ? 'bg-rivstart-yellow/20 text-yellow-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                  title="Toggle English Explanations"
+                >
+                  <Languages className="w-4 h-4" />
+                </button>
               </div>
               <div className="space-y-6">
                 {chapterData.grammar.map((point, idx) => (
                   <div key={idx} className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-100">
                     <h4 className="font-bold text-slate-800 mb-2">{point.topic}</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed">{point.explanation}</p>
+                    <div className="relative">
+                       {showGrammarTranslation ? (
+                         <p className="text-slate-600 text-sm leading-relaxed animate-fade-in-up">{point.explanationEn}</p>
+                       ) : (
+                         <p className="text-slate-600 text-sm leading-relaxed animate-fade-in-up">{point.explanationSv}</p>
+                       )}
+                    </div>
                   </div>
                 ))}
               </div>

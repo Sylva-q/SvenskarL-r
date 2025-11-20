@@ -10,6 +10,7 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'Hindi', label: 'Hindi (हिन्दी)' },
   { code: 'Russian', label: 'Russian (Русский)' },
   { code: 'Portuguese', label: 'Portuguese (Português)' },
+  { code: 'Turkish', label: 'Turkish (Türkçe)' },
 ];
 
 export const DEFAULT_TARGET_LANGUAGE = 'Chinese (Simplified)';

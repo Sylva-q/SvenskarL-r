@@ -94,16 +94,18 @@ const chapterSchema: Schema = {
   properties: {
     chapterNumber: { type: Type.INTEGER, description: "The chapter number" },
     title: { type: Type.STRING, description: "The title or main theme of the chapter" },
-    summary: { type: Type.STRING, description: "A concise summary of what is covered in this chapter" },
+    summarySv: { type: Type.STRING, description: "A concise summary in easy Swedish (A1-A2 level)" },
+    summaryEn: { type: Type.STRING, description: "English translation of the summary" },
     grammar: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
           topic: { type: Type.STRING, description: "The grammar topic name (e.g., Present Tense, Word Order)" },
-          explanation: { type: Type.STRING, description: "A brief explanation of the grammar rule" }
+          explanationSv: { type: Type.STRING, description: "Explanation of the grammar rule in simple Swedish" },
+          explanationEn: { type: Type.STRING, description: "Explanation of the grammar rule in English" }
         },
-        required: ["topic", "explanation"]
+        required: ["topic", "explanationSv", "explanationEn"]
       }
     },
     vocabulary: {
@@ -119,7 +121,7 @@ const chapterSchema: Schema = {
       }
     }
   },
-  required: ["chapterNumber", "title", "summary", "grammar", "vocabulary"]
+  required: ["chapterNumber", "title", "summarySv", "summaryEn", "grammar", "vocabulary"]
 };
 
 export const lookupSwedishWord = async (word: string, targetLanguage: string): Promise<WordDetails> => {
@@ -182,8 +184,12 @@ export const getRivstartChapter = async (chapter: number, chapterTitle: string, 
       Generate a study guide for Chapter ${chapter}: "${chapterTitle}".
       
       Include:
-      1. A brief summary of the communicative goals (what the student learns to do) in this specific chapter theme.
-      2. Key Grammar Points introduced in this specific chapter (3-5 points).
+      1. A brief summary of the communicative goals in this chapter. Provide this in TWO languages:
+         - "summarySv": Simple Swedish suitable for A1-A2 learners.
+         - "summaryEn": English translation.
+      2. Key Grammar Points introduced in this chapter (3-5 points). For each point, provide:
+         - "explanationSv": Explanation in simple Swedish.
+         - "explanationEn": Explanation in English.
       3. A Vocabulary List of 10-15 important words relevant to the theme "${chapterTitle}".
          - Translate these to English and ${targetLanguage}.
       

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Book, History as HistoryIcon, AlertCircle, Search as SearchIcon, Library, Info, Layers } from 'lucide-react';
+import { Globe, Book, History as HistoryIcon, AlertCircle, Search as SearchIcon, Library, Info, Layers, Plus } from 'lucide-react';
 import SearchBar from './components/SearchBar';
 import WordCard from './components/WordCard';
 import HistoryStats from './components/HistoryStats';
@@ -20,11 +20,14 @@ const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [savedWords, setSavedWords] = useState<WordDetails[]>([]);
+  const [searchKey, setSearchKey] = useState(0);
+  const [searchCounts, setSearchCounts] = useState<Record<string, number>>({});
 
-  // Load history and saved words from local storage on mount
+  // Load history, saved words, and search counts from local storage on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('swedishAppHistory');
     const savedFlashcards = localStorage.getItem('swedishAppFlashcards');
+    const savedCounts = localStorage.getItem('swedishAppSearchCounts');
     
     if (savedHistory) {
       try {
@@ -41,6 +44,14 @@ const App: React.FC = () => {
         console.error("Failed to parse flashcards", e);
       }
     }
+
+    if (savedCounts) {
+      try {
+        setSearchCounts(JSON.parse(savedCounts));
+      } catch (e) {
+        console.error("Failed to parse search counts", e);
+      }
+    }
   }, []);
 
   // Save to local storage whenever state changes
@@ -51,6 +62,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('swedishAppFlashcards', JSON.stringify(savedWords));
   }, [savedWords]);
+
+  useEffect(() => {
+    localStorage.setItem('swedishAppSearchCounts', JSON.stringify(searchCounts));
+  }, [searchCounts]);
 
   const handleSearch = async (word: string) => {
     setStatus(LoadingState.LOADING);
@@ -68,11 +83,35 @@ const App: React.FC = () => {
         return [{ ...result, timestamp: Date.now() }, ...filtered].slice(0, 50);
       });
 
+      // Update search count and auto-save if searched twice
+      const normalizedWord = result.word.toLowerCase();
+      setSearchCounts(prev => {
+        const currentCount = prev[normalizedWord] || 0;
+        const newCount = currentCount + 1;
+
+        // Auto-save on 2nd search
+        if (newCount === 2) {
+          setSavedWords(prevSaved => {
+            const exists = prevSaved.some(w => w.word.toLowerCase() === normalizedWord);
+            if (exists) return prevSaved;
+            return [result, ...prevSaved];
+          });
+        }
+        
+        return { ...prev, [normalizedWord]: newCount };
+      });
+
     } catch (error) {
       console.error(error);
       setStatus(LoadingState.ERROR);
       setErrorMsg("Failed to retrieve word details. Please try again.");
     }
+  };
+
+  const handleNewSearch = () => {
+    setCurrentWord(null);
+    setStatus(LoadingState.IDLE);
+    setSearchKey(prev => prev + 1);
   };
 
   const toggleSaveWord = (word: WordDetails) => {
@@ -196,8 +235,10 @@ const App: React.FC = () => {
               </div>
               
               <SearchBar 
+                key={searchKey}
                 onSearch={handleSearch} 
-                isLoading={status === LoadingState.LOADING} 
+                isLoading={status === LoadingState.LOADING}
+                autoFocus={true}
               />
             </section>
 
@@ -211,12 +252,23 @@ const App: React.FC = () => {
               )}
 
               {status === LoadingState.SUCCESS && currentWord && (
-                <WordCard 
-                  data={currentWord} 
-                  targetLanguageLabel={getTargetLangLabel().split('(')[0]}
-                  isSaved={isWordSaved(currentWord.word)}
-                  onToggleSave={toggleSaveWord}
-                />
+                <div className="space-y-6">
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleNewSearch}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-white text-rivstart-green border border-rivstart-green rounded-full font-bold shadow-sm hover:bg-rivstart-green hover:text-white transition-all duration-200 group"
+                    >
+                      <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                      New Word Search
+                    </button>
+                  </div>
+                  <WordCard 
+                    data={currentWord} 
+                    targetLanguageLabel={getTargetLangLabel().split('(')[0]}
+                    isSaved={isWordSaved(currentWord.word)}
+                    onToggleSave={toggleSaveWord}
+                  />
+                </div>
               )}
 
               {status === LoadingState.IDLE && history.length === 0 && (
@@ -247,9 +299,7 @@ const App: React.FC = () => {
                          <li key={`${item.word}-${idx}`}>
                            <button 
                               onClick={() => {
-                                setCurrentWord(item);
-                                setStatus(LoadingState.SUCCESS);
-                                setView('dictionary');
+                                handleSearch(item.word);
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                               }}
                               className="w-full flex items-center justify-between p-4 hover:bg-rivstart-mist/30 hover:border-rivstart-lightGreen border border-transparent rounded-xl transition-all duration-200 text-left group"
